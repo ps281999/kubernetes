@@ -1,0 +1,37 @@
+
+- name: Deploy Nginx Ingress Controller and Sample Application
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Install kubectl
+      become: yes
+      apt:
+        name: kubectl
+        state: present
+        update_cache: yes
+
+    - name: Install helm
+      become: yes
+      apt:
+        name: helm
+        state: present
+        update_cache: yes
+
+    - name: Add Nginx Ingress Helm repository
+      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+    - name: Update Helm repositories
+      command: helm repo update
+
+    - name: Deploy Nginx Ingress Controller
+      command: helm install nginx-ingress ingress-nginx/ingress-nginx --namespace kube-system
+
+    - name: Wait for Nginx Ingress Controller deployment to be ready
+      become: yes
+      wait_for:
+        command: "kubectl get pods -n kube-system | grep -i 'nginx-ingress-controller' | grep '1/1' | wc -l"
+        count: 1
+        timeout: 300
+
+    - name: Deploy Sample Application
+      command: kubectl apply -f /path/to/your/sample_application.yaml
